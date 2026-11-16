@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>サモリフ関係図</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+@property --r { syntax: '<percentage>'; inherits: false; initial-value: 0%; }
+
+:root{
+  --ink:#2a1d33;
+  --paper:#f3ead9;
+  --gold:#c9a45c;
+  --gold-hi:#f2d58e;
+  --wine:#6f1616;
+  --muted:#7a6a7f;
+  --bg:#1b1420;
+  --panel:#fbf6ec;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:
+    radial-gradient(1200px 700px at 30% 20%, #3a2a45 0%, transparent 60%),
+    radial-gradient(900px 600px at 90% 90%, #2b1f36 0%, transparent 60%),
+    var(--bg);
+  color:var(--ink);
+  font-family:"Zen Kaku Gothic New",system-ui,sans-serif;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+header{
+  display:flex;align-items:center;gap:14px;
+  padding:12px 20px 0;color:#efe3cf;
+}
+header h1{
+  font-family:"Shippori Mincho",serif;font-weight:800;
+  font-size:20px;letter-spacing:.12em;margin:0;
+}
+header .hint{font-size:12px;color:#b9a9c2;letter-spacing:.04em}
+main{
+  flex:1;min-height:0;display:flex;gap:16px;padding:12px 16px 16px;
+}
+#stageWrap{flex:1;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;position:relative}
+#stage{
+  position:relative;aspect-ratio:1620/1080;
+  width:100%;max-height:100%;
+  border-radius:10px;overflow:hidden;
+  box-shadow:0 20px 60px rgba(0,0,0,.55),0 0 0 1px rgba(201,164,92,.35);
+  user-select:none;-webkit-user-select:none;
+  background:#e9dcc4;
+}
+#stage img.base,#stage img.arrows{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#stage img.base{transition:filter .5s ease}
+#stage.focus img.base{filter:saturate(.75)}
+
+/* ---- veil that dims everything except related banners ---- */
+#veil{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0;transition:opacity .45s ease}
+#stage.focus #veil{opacity:1}
+
+/* ---- arrow layers: radial reveal from the selected banner ---- */
+img.arrows{
+  opacity:0;
+  -webkit-mask-image:radial-gradient(circle farthest-corner at var(--cx) var(--cy),#000 var(--r),transparent calc(var(--r) + 14%));
+          mask-image:radial-gradient(circle farthest-corner at var(--cx) var(--cy),#000 var(--r),transparent calc(var(--r) + 14%));
+  --r:0%;
+  transition:opacity .35s ease;
+  filter:drop-shadow(0 0 1.5px rgba(255,240,210,.9));
+}
+img.arrows.on{opacity:1;--r:100%;transition:--r 1.1s cubic-bezier(.3,.6,.3,1),opacity .15s ease}
+
+/* ---- hotspots ---- */
+.spot{
+  position:absolute;border:0;padding:0;margin:0;background:transparent;cursor:pointer;
+  border-radius:12% / 8%;
+  outline:none;
+}
+.spot::after{
+  content:"";position:absolute;inset:-2px;border-radius:inherit;
+  box-shadow:0 0 0 2px rgba(242,213,142,0),0 0 0 rgba(242,213,142,0);
+  transition:box-shadow .25s ease, transform .25s ease;
+}
+.spot:hover::after,.spot:focus-visible::after{box-shadow:0 0 0 2px rgba(242,213,142,.9),0 0 22px rgba(242,213,142,.65)}
+.spot.sel::after{
+  box-shadow:0 0 0 3px var(--gold-hi),0 0 30px 6px rgba(242,213,142,.8);
+  animation:pulse 2.2s ease-in-out infinite;
+}
+.spot.tgt::after{
+  box-shadow:0 0 0 2px rgba(111,22,22,.0);
+  animation:ping .7s ease-out both;animation-delay:var(--d,0s);
+}
+@keyframes pulse{
+  0%,100%{box-shadow:0 0 0 3px var(--gold-hi),0 0 26px 4px rgba(242,213,142,.7)}
+  50%{box-shadow:0 0 0 3px var(--gold-hi),0 0 40px 10px rgba(242,213,142,.95)}
+}
+@keyframes ping{
+  0%{box-shadow:0 0 0 0 rgba(111,22,22,.0)}
+  40%{box-shadow:0 0 0 3px rgba(111,22,22,.85),0 0 18px 4px rgba(242,213,142,.7)}
+  100%{box-shadow:0 0 0 2px rgba(111,22,22,.55),0 0 0 rgba(242,213,142,0)}
+}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+
+#tip{
+  position:absolute;pointer-events:none;z-index:5;
+  background:rgba(32,22,40,.92);color:#f5ead6;font-size:12px;
+  padding:6px 10px;border-radius:8px;white-space:nowrap;
+  border:1px solid rgba(201,164,92,.5);
+  transform:translate(-50%,-100%);opacity:0;transition:opacity .15s;
+}
+#tip b{font-family:"Shippori Mincho",serif;font-size:14px;margin-right:6px}
+
+/* ---- side panel ---- */
+aside{
+  width:330px;flex-shrink:0;
+  background:linear-gradient(180deg,#fbf6ec,#f1e7d4);
+  border-radius:12px;
+  box-shadow:0 20px 60px rgba(0,0,0,.45),inset 0 0 0 1px rgba(201,164,92,.55);
+  display:flex;flex-direction:column;min-height:0;overflow:hidden;
+}
+.phead{padding:18px 18px 12px;border-bottom:1px solid rgba(201,164,92,.45);position:relative}
+.phead .kicker{font-size:11px;letter-spacing:.2em;color:var(--muted)}
+.phead h2{font-family:"Shippori Mincho",serif;font-weight:800;font-size:26px;margin:4px 0 2px;line-height:1.2}
+.phead .sub{font-size:12px;color:var(--muted)}
+.who{display:flex;gap:14px;align-items:center}
+.thumb{
+  flex-shrink:0;width:52px;aspect-ratio:123/183;border-radius:6px;
+  background-image:url(img/base.webp);background-repeat:no-repeat;
+  box-shadow:0 2px 6px rgba(0,0,0,.25);
+}
+.who .thumb{width:64px}
+.nav{display:flex;gap:6px;margin-top:12px}
+.btn{
+  font:inherit;font-size:12px;cursor:pointer;
+  background:#fff;border:1px solid rgba(201,164,92,.7);color:var(--ink);
+  padding:6px 10px;border-radius:999px;
+  transition:background .15s,transform .1s;
+}
+.btn:hover{background:#fff4dc}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--ink);color:#f5ead6;border-color:var(--ink)}
+.btn.primary:hover{background:#3d2b4a}
+.pbody{flex:1;overflow:auto;padding:12px 14px 18px}
+.sec{margin:6px 4px 8px;display:flex;align-items:baseline;gap:8px}
+.sec h3{font-family:"Shippori Mincho",serif;font-size:15px;margin:0}
+.sec .n{font-size:12px;color:var(--wine);font-weight:700}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;margin-bottom:14px}
+.chip{
+  display:flex;gap:8px;align-items:center;text-align:left;
+  font:inherit;font-size:13px;cursor:pointer;
+  background:rgba(255,255,255,.75);border:1px solid rgba(201,164,92,.45);
+  padding:5px 8px 5px 5px;border-radius:8px;
+  opacity:0;transform:translateY(4px);animation:rise .35s ease-out forwards;animation-delay:var(--d,0s);
+}
+.chip:hover{background:#fff;border-color:var(--gold)}
+.chip .thumb{width:24px;border-radius:3px}
+.chip .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip .tag{font-size:10px;color:#fff;background:var(--wine);border-radius:999px;padding:1px 6px;flex-shrink:0}
+.chip .tag.m{background:#4b6b3c}
+.chip .note{display:block;font-size:10px;color:var(--wine)}
+@keyframes rise{to{opacity:1;transform:none}}
+.empty{font-size:12px;color:var(--muted);margin:0 4px 14px}
+.legend{font-size:11px;color:var(--muted);margin:2px 4px 10px;line-height:1.6}
+.rank{display:flex;flex-direction:column;gap:4px}
+.rank .chip{font-size:13px}
+.bar{height:4px;border-radius:2px;background:linear-gradient(90deg,var(--wine),#b0563f);margin-top:3px}
+
+@media (max-width: 900px){
+  body{overflow:auto;height:auto}
+  main{flex-direction:column;padding:10px}
+  #stageWrap{flex:none}
+  aside{width:100%;max-height:none}
+  .pbody{overflow:visible}
+  header .hint{display:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>サモリフ関係図</h1>
+  <span class="hint">バナーをクリック → その人が会ったことある人へ矢印 ／ ← → で順送り ／ Esc で全体へ</span>
+</header>
+<main>
+  <div id="stageWrap">
+    <div id="stage">
+      <img class="base" src="img/base.webp" alt="関係図の全体">
+      <svg id="veil" viewBox="0 0 1620 1080" preserveAspectRatio="none">
+        <defs><mask id="holes"><rect width="1620" height="1080" fill="#fff"/><g id="holeG"></g></mask></defs>
+        <rect width="1620" height="1080" fill="rgba(28,16,36,.42)" mask="url(#holes)"/>
+      </svg>
+      <div id="layers"></div>
+      <div id="spots"></div>
+      <div id="tip"></div>
+    </div>
+  </div>
+  <aside id="panel"></aside>
+</main>
+
+<script>
+const W = 1620, H = 1080;
+
+/* box: [x0, x1, y0, y1] in source-image pixels */
+const PEOPLE = [
+  {id:'muchio',     name:'むちお',          box:[222,347,85,268]},
+  {id:'kimura',     name:'木村',            full:'サモナーズリフト研修生の木村', box:[562,685,72,250]},
+  {id:'okan',       name:'Okan',            box:[867,990,85,268]},
+  {id:'cider',      name:'サイダー',        box:[1137,1260,117,300]},
+  {id:'unitero',    name:'ゆにてろ',        box:[1385,1505,62,245]},
+  {id:'tenshinhan', name:'天津飯',          full:'サモリフ研修生の那須川天津飯', box:[97,220,302,485]},
+  {id:'mutsuki',    name:'むつき',          box:[382,505,275,458]},
+  {id:'yone',       name:'ヨネ’s剣士',      box:[622,745,320,500]},
+  {id:'sight',      name:'sight',           box:[867,990,345,525]},
+  {id:'rijun',      name:'りじゅん',        full:'applealla りじゅん', box:[1155,1280,365,548]},
+  {id:'nakagawa',   name:'なかがわ',        box:[1418,1540,313,497]},
+  {id:'nanaco',     name:'7co',             box:[88,212,580,762]},
+  {id:'hiro',       name:'ひろ',            box:[392,515,547,730]},
+  {id:'chabin',     name:'ちゃびん',        box:[733,856,650,832]},
+  {id:'yasame',     name:'やさめー',        box:[1040,1163,612,795]},
+  {id:'yuzuki',     name:'yuzuki',          box:[1398,1520,567,750]},
+  {id:'ang',        name:'AnG',             box:[183,306,815,998]},
+  {id:'chiotamu',   name:'ちおたむ・けんち', box:[507,630,817,1000]},
+  {id:'tomoki',     name:'ともき',          box:[1253,1375,782,965]},
+  {id:'teru',       name:'TERU',            box:[915,1038,840,1022]},
+];
+
+/* who → people they've met (read from each person's arrow image) */
+const MET = {
+  nanaco:    ['okan','muchio','kimura','mutsuki','yone','tenshinhan','sight','rijun','hiro','yuzuki','chiotamu','ang'],
+  ang:       ['kimura','muchio','okan','tenshinhan','mutsuki','yone','sight','rijun','yuzuki','hiro','chiotamu'],
+  teru:      ['yasame'],
+  okan:      ['muchio','cider','yone','sight','mutsuki','nakagawa','rijun','yuzuki','nanaco','chiotamu','ang'],
+  sight:     ['unitero','kimura','cider','muchio','okan','tenshinhan','mutsuki','yone','nakagawa','rijun','hiro','yuzuki','yasame','nanaco','ang','chiotamu'],
+  yuzuki:    ['muchio','cider','okan','yone','mutsuki','rijun','sight','nakagawa','nanaco','chiotamu','ang'],
+  chiotamu:  ['kimura','okan','muchio','sight','mutsuki','rijun','tenshinhan','yone','yuzuki','nanaco','ang'],
+  chabin:    ['yasame'],
+  tomoki:    ['nakagawa','rijun','yasame'],
+  nakagawa:  ['okan','rijun','sight','yuzuki','yasame','tomoki'],
+  hiro:      ['kimura','muchio','yone','tenshinhan','mutsuki','sight','nanaco','chiotamu','ang'],
+  muchio:    ['okan','kimura','mutsuki','tenshinhan','sight','yone','rijun','nanaco','yuzuki','hiro','ang','chiotamu'],
+  mutsuki:   ['okan','muchio','kimura','sight','tenshinhan','yone','rijun','hiro','nanaco','yuzuki','ang','chiotamu'],
+  yasame:    ['nakagawa','sight','rijun','chabin','teru','tomoki'],
+  unitero:   ['cider'],
+  yone:      ['okan','muchio','kimura','rijun','mutsuki','tenshinhan','sight','hiro','yuzuki','nanaco','chiotamu','ang'],
+  rijun:     ['muchio','mutsuki','yone','cider','nakagawa','sight','yuzuki','nanaco','yasame','tomoki','ang','chiotamu'],
+  cider:     ['unitero','okan','rijun','nakagawa','sight','yuzuki'],
+  tenshinhan:['kimura','muchio','mutsuki','yone','sight','hiro','nanaco','ang','chiotamu'],
+  kimura:    ['muchio','mutsuki','yone','sight','tenshinhan','hiro','nanaco','ang','chiotamu'],
+};
+/* labels written on some arrows */
+const NOTES = {
+  'teru>yasame':'大学が一緒', 'yasame>teru':'大学が一緒',
+  'chabin>yasame':'会社の同僚', 'yasame>chabin':'会社の同僚',
+  'rijun>yuzuki':'大学が一緒', 'yuzuki>rijun':'大学が一緒',
+};
+
+const byId = Object.fromEntries(PEOPLE.map(p => [p.id, p]));
+const center = p => [(p.box[0]+p.box[1])/2, (p.box[2]+p.box[3])/2];
+
+const stage = document.getElementById('stage');
+const layersEl = document.getElementById('layers');
+const spotsEl = document.getElementById('spots');
+const holeG = document.getElementById('holeG');
+const panel = document.getElementById('panel');
+const tip = document.getElementById('tip');
+
+/* thumbnail = the banner itself cropped out of the base image */
+function thumbStyle(p){
+  const [x0,x1,y0,y1] = p.box, w = x1-x0, h = y1-y0;
+  const sx = W / w * 100, sy = H / h * 100;
+  const px = x0 / (W - w) * 100, py = y0 / (H - h) * 100;
+  return `background-size:${sx}% ${sy}%;background-position:${px}% ${py}%`;
+}
+const thumb = p => `<span class="thumb" style="${thumbStyle(p)}"></span>`;
+
+/* build arrow layers + hotspots */
+const layerImg = {}, spotEl = {};
+for (const p of PEOPLE){
+  const [cx, cy] = center(p);
+  const img = new Image();
+  img.className = 'arrows'; img.alt = ''; img.decoding = 'async';
+  img.src = `img/arrows/${p.id}.png`;
+  img.style.setProperty('--cx', (cx/W*100)+'%');
+  img.style.setProperty('--cy', (cy/H*100)+'%');
+  layersEl.appendChild(img); layerImg[p.id] = img;
+
+  const b = document.createElement('button');
+  b.className = 'spot';
+  b.setAttribute('aria-label', p.full || p.name);
+  Object.assign(b.style, {
+    left: p.box[0]/W*100+'%', top: p.box[2]/H*100+'%',
+    width: (p.box[1]-p.box[0])/W*100+'%', height: (p.box[3]-p.box[2])/H*100+'%'
+  });
+  b.addEventListener('click', e => { e.stopPropagation(); select(current === p.id ? null : p.id); });
+  b.addEventListener('mouseenter', () => showTip(p));
+  b.addEventListener('mouseleave', () => tip.style.opacity = 0);
+  spotsEl.appendChild(b); spotEl[p.id] = b;
+}
+stage.addEventListener('click', () => select(null));
+
+function showTip(p){
+  const out = MET[p.id].length;
+  tip.innerHTML = `<b>${p.full || p.name}</b>会ったことある人 ${out}人`;
+  tip.style.left = ((p.box[0]+p.box[1])/2/W*100)+'%';
+  tip.style.top = (p.box[2]/H*100 - 0.6)+'%';
+  tip.style.opacity = 1;
+}
+
+let current = null;
+function select(id, {push = true} = {}){
+  current = id;
+  if (push){
+    const h = id ? '#'+id : ' ';
+    try { history.replaceState(null, '', id ? '#'+id : location.pathname + location.search); } catch(e){ location.hash = id || ''; }
+  }
+  stage.classList.toggle('focus', !!id);
+
+  for (const p of PEOPLE){
+    const img = layerImg[p.id];
+    if (p.id === id){
+      // restart reveal
+      img.classList.remove('on'); void img.offsetWidth; img.classList.add('on');
+    } else img.classList.remove('on');
+    spotEl[p.id].classList.remove('sel','tgt');
+    spotEl[p.id].style.removeProperty('--d');
+  }
+
+  holeG.innerHTML = '';
+  if (id){
+    const me = byId[id], [mx, my] = center(me);
+    const related = [id, ...MET[id]];
+    spotEl[id].classList.add('sel');
+    // stagger target highlight with the reveal wave (distance based)
+    const maxD = Math.hypot(W, H);
+    for (const t of MET[id]){
+      const [tx, ty] = center(byId[t]);
+      const d = (Math.hypot(tx-mx, ty-my) / maxD) * 1.0 + 0.15;
+      const el = spotEl[t];
+      el.style.setProperty('--d', d.toFixed(2)+'s');
+      el.classList.add('tgt');
+    }
+    for (const r of related){
+      const [x0,x1,y0,y1] = byId[r].box;
+      holeG.insertAdjacentHTML('beforeend',
+        `<rect x="${x0-6}" y="${y0-6}" width="${x1-x0+12}" height="${y1-y0+12}" rx="16" fill="#000"/>`);
+    }
+  }
+  renderPanel();
+}
+
+function chip(p, i, extra = ''){
+  return `<button class="chip" data-id="${p.id}" style="--d:${(i*0.03).toFixed(2)}s">${thumb(p)}<span class="nm">${p.name}${extra}</span></button>`;
+}
+
+function renderPanel(){
+  if (!current){
+    const ranked = [...PEOPLE].sort((a,b) => MET[b.id].length - MET[a.id].length);
+    const max = MET[ranked[0].id].length;
+    panel.innerHTML = `
+      <div class="phead">
+        <div class="kicker">OVERVIEW</div>
+        <h2>全体図</h2>
+        <div class="sub">${PEOPLE.length}人 ・ 矢印 ${Object.values(MET).reduce((s,l)=>s+l.length,0)}本</div>
+      </div>
+      <div class="pbody">
+        <div class="sec"><h3>会ったことある人が多い順</h3></div>
+        <div class="rank">${ranked.map((p,i)=>`
+          <button class="chip" data-id="${p.id}" style="--d:${(i*0.02).toFixed(2)}s">${thumb(p)}
+            <span class="nm">${p.name}<span class="bar" style="width:${MET[p.id].length/max*100}%"></span></span>
+            <span class="tag">${MET[p.id].length}</span>
+          </button>`).join('')}
+        </div>
+      </div>`;
+  } else {
+    const me = byId[current];
+    const out = MET[current].map(id => byId[id]);
+    const noteOf = (a,b) => NOTES[a+'>'+b] ? `<span class="note">${NOTES[a+'>'+b]}</span>` : '';
+    const idx = PEOPLE.findIndex(p => p.id === current);
+    panel.innerHTML = `
+      <div class="phead">
+        <div class="who">${thumb(me)}
+          <div>
+            <div class="kicker">${String(idx+1).padStart(2,'0')} / ${PEOPLE.length}</div>
+            <h2>${me.name}</h2>
+            <div class="sub">${me.full && me.full !== me.name ? me.full : '&nbsp;'}</div>
+          </div>
+        </div>
+        <div class="nav">
+          <button class="btn" data-act="prev">← 前</button>
+          <button class="btn" data-act="next">次 →</button>
+          <button class="btn primary" data-act="reset" style="margin-left:auto">全体に戻る</button>
+        </div>
+      </div>
+      <div class="pbody">
+        <div class="sec"><h3>会ったことある人</h3><span class="n">${out.length}人</span></div>
+        <div class="chips">
+          ${out.map((p,i)=>chip(p,i,noteOf(current,p.id))).join('')}
+        </div>
+      </div>`;
+  }
+  panel.querySelectorAll('.chip').forEach(c => {
+    c.addEventListener('click', () => select(c.dataset.id));
+    const p = byId[c.dataset.id];
+    c.addEventListener('mouseenter', () => { spotEl[p.id].classList.add('peek'); showTip(p); });
+    c.addEventListener('mouseleave', () => { tip.style.opacity = 0; });
+  });
+  panel.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => {
+    const a = b.dataset.act;
+    if (a === 'reset') select(null);
+    else step(a === 'next' ? 1 : -1);
+  }));
+}
+
+function step(dir){
+  const i = current ? PEOPLE.findIndex(p => p.id === current) : (dir > 0 ? -1 : 0);
+  select(PEOPLE[(i + dir + PEOPLE.length) % PEOPLE.length].id);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') select(null);
+  else if (e.key === 'ArrowRight') step(1);
+  else if (e.key === 'ArrowLeft') step(-1);
+});
+window.addEventListener('hashchange', () => {
+  const id = location.hash.slice(1);
+  if ((byId[id] ? id : null) !== current) select(byId[id] ? id : null, {push:false});
+});
+
+const initial = location.hash.slice(1);
+select(byId[initial] ? initial : null, {push:false});
+</script>
+</body>
+</html>
