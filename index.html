@@ -228,15 +228,15 @@ const PEOPLE = [
 /* who → people they've met (read from each person's arrow image) */
 const MET = {
   nanaco:    ['okan','muchio','kimura','mutsuki','yone','tenshinhan','sight','rijun','hiro','yuzuki','chiotamu','ang'],
-  ang:       ['kimura','muchio','okan','tenshinhan','mutsuki','yone','sight','rijun','yuzuki','hiro','chiotamu'],
+  ang:       ['nanaco','kimura','muchio','okan','tenshinhan','mutsuki','yone','sight','rijun','yuzuki','hiro','chiotamu'],
   teru:      ['yasame'],
   okan:      ['muchio','cider','yone','sight','mutsuki','nakagawa','rijun','yuzuki','nanaco','chiotamu','ang'],
   sight:     ['unitero','kimura','cider','muchio','okan','tenshinhan','mutsuki','yone','nakagawa','rijun','hiro','yuzuki','yasame','nanaco','ang','chiotamu'],
   yuzuki:    ['muchio','cider','okan','yone','mutsuki','rijun','sight','nakagawa','nanaco','chiotamu','ang'],
-  chiotamu:  ['kimura','okan','muchio','sight','mutsuki','rijun','tenshinhan','yone','yuzuki','nanaco','ang'],
+  chiotamu:  ['hiro','kimura','okan','muchio','sight','mutsuki','rijun','tenshinhan','yone','yuzuki','nanaco','ang'],
   chabin:    ['yasame'],
   tomoki:    ['nakagawa','rijun','yasame'],
-  nakagawa:  ['okan','rijun','sight','yuzuki','yasame','tomoki'],
+  nakagawa:  ['cider','okan','rijun','sight','yuzuki','yasame','tomoki'],
   hiro:      ['kimura','muchio','yone','tenshinhan','mutsuki','sight','nanaco','chiotamu','ang'],
   muchio:    ['okan','kimura','mutsuki','tenshinhan','sight','yone','rijun','nanaco','yuzuki','hiro','ang','chiotamu'],
   mutsuki:   ['okan','muchio','kimura','sight','tenshinhan','yone','rijun','hiro','nanaco','yuzuki','ang','chiotamu'],
@@ -280,7 +280,7 @@ for (const p of PEOPLE){
   const [cx, cy] = center(p);
   const img = new Image();
   img.className = 'arrows'; img.alt = ''; img.decoding = 'async';
-  img.src = `img/arrows/${p.id}.png`;
+  img.src = `img/arrows/${p.id}.png?v=2`;
   img.style.setProperty('--cx', (cx/W*100)+'%');
   img.style.setProperty('--cy', (cy/H*100)+'%');
   layersEl.appendChild(img); layerImg[p.id] = img;
